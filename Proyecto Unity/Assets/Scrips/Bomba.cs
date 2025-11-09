@@ -88,17 +88,24 @@ public class Bomb : MonoBehaviour
 
     private void Explode()
     {
-        Debug.Log("La bomba explotó.");
+        Debug.Log("💥 La bomba explotó.");
 
         Collider[] hits = Physics.OverlapSphere(transform.position, explodeRadius);
 
         foreach (Collider hit in hits)
         {
-
             Rigidbody hitRb = hit.GetComponent<Rigidbody>();
             if (hitRb != null)
             {
                 hitRb.AddExplosionForce(explosionForce, transform.position, explodeRadius);
+            }
+
+            // 🧱 Si el objeto tiene el tag "Caja", se destruye
+            if (hit.CompareTag("Caja"))
+            {
+                Debug.Log("Caja destruida por la explosión.");
+                Destroy(hit.gameObject);
+                continue;
             }
 
             EnemyController enemy = hit.GetComponent<EnemyController>();
@@ -112,7 +119,7 @@ public class Bomb : MonoBehaviour
             PlayerHealth player = hit.GetComponent<PlayerHealth>();
             if (player != null)
             {
-                player.TakeDamage(explodeDamage / 2f); 
+                player.TakeDamage(explodeDamage / 2f);
                 Debug.Log($"Jugador dañado por bomba ({explodeDamage / 2f}).");
                 continue;
             }
