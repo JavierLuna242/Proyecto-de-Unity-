@@ -8,17 +8,15 @@ public class IntroManager : MonoBehaviour
     public TextMeshProUGUI introText;
 
     [Header("Configuración")]
-    public KeyCode startKey = KeyCode.Space; // tecla para iniciar
+    public KeyCode startKey = KeyCode.Space; 
 
     private bool gameStarted = false;
 
     void Start()
     {
-        // Asegurarse de que el panel esté activo al inicio
         if (introPanel != null)
             introPanel.SetActive(true);
 
-        // Detener el tiempo del juego (opcional)
         Time.timeScale = 0f;
     }
 
@@ -36,8 +34,6 @@ public class IntroManager : MonoBehaviour
 
         if (introPanel != null)
             introPanel.SetActive(false);
-
-        // Reanudar el tiempo del juego
         Time.timeScale = 1f;
     }
 }

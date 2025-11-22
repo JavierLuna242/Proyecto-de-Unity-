@@ -6,9 +6,9 @@ using System.Collections;
 public class PlayerHealth : MonoBehaviour
 {
     [Header("Configuración de vidas y escudo")]
-    public int maxLives = 3;       // vidas totales
-    public int currentLives;       // vidas actuales
-    public bool hasShield = false; // escudo activo o no (1 = sí, 0 = no)
+    public int maxLives = 3; 
+    public int currentLives;     
+    public bool hasShield = false; 
 
     [Header("Interfaz (HUD)")]
     public TextMeshProUGUI livesText;
@@ -26,20 +26,17 @@ public class PlayerHealth : MonoBehaviour
         UpdateUI();
     }
 
-    // --- Recibir daño ---
     public void TakeDamage(float amount)
     {
         if (isDead) return;
 
         if (hasShield)
         {
-            // 🔵 El escudo bloquea el daño y se rompe
             hasShield = false;
             Debug.Log("🛡️ El escudo absorbió el daño y se rompió.");
         }
         else
         {
-            // ❤️ No hay escudo → se pierde una vida
             currentLives--;
             Debug.Log($"El jugador perdió una vida. Vidas restantes: {currentLives}");
 
@@ -53,7 +50,6 @@ public class PlayerHealth : MonoBehaviour
         UpdateUI();
     }
 
-    // --- Recoger una vida ---
     public void AddLife(int amount = 1)
     {
         if (currentLives < maxLives)
@@ -63,19 +59,15 @@ public class PlayerHealth : MonoBehaviour
             UpdateUI();
         }
     }
-
-    // --- Recoger un escudo ---
     public void AddShield()
     {
         if (!hasShield)
         {
             hasShield = true;
-            Debug.Log("🛡️ Escudo activado.");
+            Debug.Log("Escudo activado.");
             UpdateUI();
         }
     }
-
-    // --- Actualizar HUD ---
     void UpdateUI()
     {
         if (livesText != null)
@@ -85,13 +77,12 @@ public class PlayerHealth : MonoBehaviour
             shieldText.text = hasShield ? "Escudo: ACTIVADO" : "Escudo: ---";
     }
 
-    // --- Muerte ---
     void Die()
     {
         if (isDead) return;
         isDead = true;
 
-        Debug.Log("💀 El jugador ha muerto");
+        Debug.Log("El jugador ha muerto");
 
         if (deathEffect != null)
             Instantiate(deathEffect, transform.position, Quaternion.identity);

@@ -11,6 +11,10 @@ public class Bomb : MonoBehaviour
     public float explodeDamage = 50f;
     public float explosionForce = 500f;
 
+    [Header("Hold Position Offset")]
+    public Vector3 holdLocalPosition = new Vector3(0f, 0.40f, 0.25f);
+    public Vector3 holdLocalRotation = new Vector3(0f, 0f, 0f);
+
     private Rigidbody rb;
     private bool isHeld = false;
     private bool hasTouchedGround = false;
@@ -23,15 +27,6 @@ public class Bomb : MonoBehaviour
             rb = gameObject.AddComponent<Rigidbody>();
     }
 
-    void Update()
-    {
-        if (isHeld && holder != null)
-        {
-            transform.position = holder.position;
-            transform.rotation = holder.rotation;
-        }
-    }
-
     public void PickUp(Transform playerHand)
     {
         if (isHeld) return;
@@ -40,7 +35,11 @@ public class Bomb : MonoBehaviour
         holder = playerHand;
         rb.isKinematic = true;
         rb.velocity = Vector3.zero;
-        transform.SetParent(playerHand, true);
+
+        transform.SetParent(playerHand, false);
+        transform.localPosition = holdLocalPosition;     
+        transform.localEulerAngles = holdLocalRotation;
+
         hasTouchedGround = false;
     }
 
@@ -59,9 +58,7 @@ public class Bomb : MonoBehaviour
         holder = null;
 
         if (explodeDelayAfterThrow > 0f)
-        {
             StartCoroutine(ExplodeAfterDelay(explodeDelayAfterThrow));
-        }
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -88,7 +85,7 @@ public class Bomb : MonoBehaviour
 
     private void Explode()
     {
-        Debug.Log("💥 La bomba explotó.");
+        Debug.Log("La bomba explotó.");
 
         Collider[] hits = Physics.OverlapSphere(transform.position, explodeRadius);
 
@@ -100,7 +97,6 @@ public class Bomb : MonoBehaviour
                 hitRb.AddExplosionForce(explosionForce, transform.position, explodeRadius);
             }
 
-            // 🧱 Si el objeto tiene el tag "Caja", se destruye
             if (hit.CompareTag("Caja"))
             {
                 Debug.Log("Caja destruida por la explosión.");
@@ -112,7 +108,6 @@ public class Bomb : MonoBehaviour
             if (enemy != null)
             {
                 enemy.TakeDamage(explodeDamage);
-                Debug.Log($"Enemigo dañado por bomba ({explodeDamage}).");
                 continue;
             }
 
@@ -120,7 +115,6 @@ public class Bomb : MonoBehaviour
             if (player != null)
             {
                 player.TakeDamage(explodeDamage / 2f);
-                Debug.Log($"Jugador dañado por bomba ({explodeDamage / 2f}).");
                 continue;
             }
 

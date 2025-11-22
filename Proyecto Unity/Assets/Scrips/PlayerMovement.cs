@@ -13,9 +13,9 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Transform cameraTransform;
 
     [Header("Gravedad y Salto")]
-    [SerializeField] private float gravity = -20f;          // 👈 Más peso al caer
-    [SerializeField] private float jumpHeight = 1.2f;       // 👈 Salto más bajo
-    [SerializeField] private float fallGravityMultiplier = 2f; // 👈 Aumenta gravedad solo al caer
+    [SerializeField] private float gravity = -20f;         
+    [SerializeField] private float jumpHeight = 1.2f;     
+    [SerializeField] private float fallGravityMultiplier = 2f; 
 
     [Header("Límite de Caída")]
     [SerializeField] private float fallLimit = -10f;
@@ -64,8 +64,6 @@ public class PlayerMovement : MonoBehaviour
             currentMoveDir = Vector3.SmoothDamp(currentMoveDir, targetMoveDir, ref moveDirSmoothVelocity, smoothMoveTime);
             moveDir = currentMoveDir.normalized * currentSpeed;
         }
-
-        // 🚀 Salto
         if (controller.isGrounded)
         {
             if (velocity.y < 0)
@@ -79,7 +77,6 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            // 📌 Aumentar gravedad solo cuando cae (más natural)
             if (velocity.y < 0)
                 velocity.y += gravity * fallGravityMultiplier * Time.deltaTime;
             else

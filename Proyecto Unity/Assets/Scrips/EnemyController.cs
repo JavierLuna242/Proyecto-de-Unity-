@@ -4,67 +4,82 @@ using UnityEngine;
 public class EnemyController : MonoBehaviour
 {
     [Header("Movimiento del enemigo")]
-    public float moveSpeed = 2f;          
-    public float chaseSpeed = 3.5f;            
-    public float patrolRadius = 5f;             
-    public float waitTime = 2f;                
+    public float walkSpeed = 2f;
+    public float runSpeed = 3.5f;
+    public float smoothTurnTime = 0.1f;
+    public float smoothMoveTime = 0.1f;
+    public float patrolRadius = 5f;
+    public float waitTime = 2f;
 
     [Header("Persecución del jugador")]
-    public float detectionRadius = 7f;         
-    public float loseSightRadius = 10f;      
+    public float detectionRadius = 7f;
+    public float loseSightRadius = 10f;
 
     [Header("Ataque al jugador")]
-    public float damage = 20f;                
-    public float attackRange = 1.5f;           
-    public float attackCooldown = 1f;         
+    public float damage = 20f;
+    public float attackRange = 1.5f;
+    public float attackCooldown = 1f;
 
     [Header("Vida del enemigo")]
     public float maxHealth = 100f;
     private float currentHealth;
 
+    [Header("Animaciones")]
+    public Animator anim;
+
     private Transform player;
     private Vector3 startPosition;
     private Vector3 targetPosition;
+
+    private Vector3 currentMoveDir;
+    private Vector3 moveDirSmoothVelocity;
+    private float turnSmoothVelocity;
+
     private bool isWaiting = false;
-    private float waitTimer = 0f;
-    private float nextAttackTime = 0f;
     private bool isChasing = false;
+    private bool isAttacking = false;
+    private bool isDead = false;
+
+    private float waitTimer;
+    private float nextAttackTime;
+
+    private float fixedY;
 
     void Start()
     {
         startPosition = transform.position;
+        fixedY = transform.position.y;
+
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
         currentHealth = maxHealth;
+
         SetNewTargetPosition();
 
-        Collider col = GetComponent<Collider>();
-        col.isTrigger = true;
+        if (anim == null)
+            Debug.LogError("Asigna un Animator al enemigo " + gameObject.name);
     }
 
     void Update()
     {
-        if (player == null) return;
+        if (isDead || player == null) return;
 
-        float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+        float dist = Vector3.Distance(transform.position, player.position);
 
-        if (distanceToPlayer <= detectionRadius)
-        {
+        if (dist <= detectionRadius && !isAttacking)
             isChasing = true;
-        }
-        else if (distanceToPlayer >= loseSightRadius)
-        {
+        else if (dist >= loseSightRadius)
             isChasing = false;
-        }
 
-        if (isChasing)
-            ChasePlayer();
-        else
-            Patrol();
-
-        if (isChasing && distanceToPlayer <= attackRange)
+        if (!isAttacking)
         {
-            TryAttack();
+            if (isChasing) ChasePlayer();
+            else Patrol();
         }
+
+        if (isChasing && dist <= attackRange)
+            TryAttack();
+
+        UpdateAnimations();
     }
 
     void Patrol()
@@ -80,13 +95,18 @@ public class EnemyController : MonoBehaviour
             return;
         }
 
-        transform.position = Vector3.MoveTowards(transform.position, targetPosition, moveSpeed * Time.deltaTime);
+        Vector3 dir = (targetPosition - transform.position);
+        dir.y = 0f;
+        float distance = dir.magnitude;
+        dir.Normalize();
 
-        Vector3 dir = (targetPosition - transform.position).normalized;
-        if (dir.magnitude > 0.1f)
-            transform.rotation = Quaternion.LookRotation(dir);
+        Vector3 targetDir = dir * walkSpeed;
+        Vector3 moveDir = Vector3.SmoothDamp(currentMoveDir, targetDir, ref moveDirSmoothVelocity, smoothMoveTime);
+        currentMoveDir = moveDir;
 
-        if (Vector3.Distance(transform.position, targetPosition) < 0.3f)
+        MoveAndRotate(moveDir);
+
+        if (distance < 0.3f)
         {
             isWaiting = true;
             waitTimer = 0f;
@@ -95,69 +115,80 @@ public class EnemyController : MonoBehaviour
 
     void ChasePlayer()
     {
-        if (player == null) return;
+        Vector3 dir = (player.position - transform.position);
+        dir.y = 0f;
+        dir.Normalize();
 
-        Vector3 dir = (player.position - transform.position).normalized;
-        transform.position += dir * chaseSpeed * Time.deltaTime;
-        transform.rotation = Quaternion.LookRotation(dir);
+        Vector3 targetDir = dir * runSpeed;
+        Vector3 moveDir = Vector3.SmoothDamp(currentMoveDir, targetDir, ref moveDirSmoothVelocity, smoothMoveTime);
+        currentMoveDir = moveDir;
+
+        MoveAndRotate(moveDir);
     }
 
-    void SetNewTargetPosition()
+    void MoveAndRotate(Vector3 moveDir)
     {
-        Vector2 random = Random.insideUnitCircle * patrolRadius;
-        targetPosition = new Vector3(startPosition.x + random.x, startPosition.y, startPosition.z + random.y);
+        if (moveDir.magnitude > 0.1f)
+        {
+            float targetAngle = Mathf.Atan2(moveDir.x, moveDir.z) * Mathf.Rad2Deg;
+            float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, smoothTurnTime);
+            transform.rotation = Quaternion.Euler(0f, angle, 0f);
+        }
+
+        transform.position += moveDir * Time.deltaTime;
+        transform.position = new Vector3(transform.position.x, fixedY, transform.position.z);
     }
 
     void TryAttack()
     {
         if (Time.time >= nextAttackTime)
         {
-            float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+            isAttacking = true;
+            anim.SetTrigger("attack");
+            nextAttackTime = Time.time + attackCooldown;
 
-            if (distanceToPlayer <= attackRange)
-            {
-                PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
-
-                if (playerHealth != null)
-                {
-                    playerHealth.TakeDamage(damage);
-                    Debug.Log($" Enemigo golpea al jugador ({damage} daño)");
-                }
-
-                nextAttackTime = Time.time + attackCooldown;
-            }
+            Invoke(nameof(DealDamage), 0.4f);
+            Invoke(nameof(ResetAttack), 0.8f);
         }
     }
 
+    void DealDamage()
+    {
+        if (player != null && Vector3.Distance(transform.position, player.position) <= attackRange)
+            player.GetComponent<PlayerHealth>()?.TakeDamage(damage);
+    }
+
+    void ResetAttack() => isAttacking = false;
+
+    void UpdateAnimations()
+    {
+        if (isDead || anim == null) return;
+
+        float speedPercent = currentMoveDir.magnitude / runSpeed;
+        anim.SetFloat("Speed", speedPercent, 0.1f, Time.deltaTime);
+    }
     public void TakeDamage(float amount)
     {
+        if (isDead) return;
+
         currentHealth -= amount;
-        Debug.Log($"Enemigo recibe {amount} de daño. Vida restante: {currentHealth}");
+        anim.SetTrigger("hurt");
 
         if (currentHealth <= 0f)
-        {
             Die();
-        }
     }
 
     void Die()
     {
-        Debug.Log("Enemigo eliminado");
-        Destroy(gameObject);
+        isDead = true;
+        anim.SetTrigger("die");
+        Destroy(gameObject, 2f);
     }
 
-    private void OnDrawGizmosSelected()
+
+    void SetNewTargetPosition()
     {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(startPosition == Vector3.zero ? transform.position : startPosition, patrolRadius);
-
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, detectionRadius);
-
-        Gizmos.color = Color.gray;
-        Gizmos.DrawWireSphere(transform.position, loseSightRadius);
-
-        Gizmos.color = Color.magenta;
-        Gizmos.DrawWireSphere(transform.position, attackRange);
+        Vector2 rnd = Random.insideUnitCircle * patrolRadius;
+        targetPosition = new Vector3(startPosition.x + rnd.x, fixedY, startPosition.z + rnd.y);
     }
 }
