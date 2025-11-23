@@ -7,9 +7,6 @@ public class IntroManager : MonoBehaviour
     public GameObject introPanel;
     public TextMeshProUGUI introText;
 
-    [Header("Configuración")]
-    public KeyCode startKey = KeyCode.Space; 
-
     private bool gameStarted = false;
 
     void Start()
@@ -17,12 +14,14 @@ public class IntroManager : MonoBehaviour
         if (introPanel != null)
             introPanel.SetActive(true);
 
+        // Pausar el juego
         Time.timeScale = 0f;
     }
 
     void Update()
     {
-        if (!gameStarted && Input.GetKeyDown(startKey))
+        // Si no ha empezado y se presiona cualquier tecla
+        if (!gameStarted && Input.anyKeyDown)
         {
             StartGame();
         }
@@ -34,6 +33,8 @@ public class IntroManager : MonoBehaviour
 
         if (introPanel != null)
             introPanel.SetActive(false);
+
+        // Reanudar el juego
         Time.timeScale = 1f;
     }
 }

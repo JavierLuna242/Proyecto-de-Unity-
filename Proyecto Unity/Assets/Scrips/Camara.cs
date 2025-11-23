@@ -3,24 +3,28 @@ using UnityEngine;
 public class CameraFollow : MonoBehaviour
 {
     [Header("Configuración de Cámara")]
-    public Transform player;                
-    public Transform cameraTarget;            
+    public Transform player;
+    public Transform cameraTarget;
     public Vector3 shoulderOffset = new Vector3(0.3f, 1.7f, -2f);
-    public float followSpeed = 10f;
-    public float rotationSpeed = 5f;
-    public float mouseSensitivity = 2f;
 
-    [Header("Órbita (Rotación con el ratón)")]
-    public float yaw = 0f;                 
-    private float pitch = 0f;               
-    [SerializeField] private float minPitch = -30f; 
-    [SerializeField] private float maxPitch = 60f;   
+    [Header("Velocidades")]
+    public float followSpeed = 8f;
+    public float rotationSmoothSpeed = 12f;
+    public float mouseSensitivity = 0.8f; // 🔥 Sensibilidad reducida
+
+    [Header("Órbita (Rotación)")]
+    private float yaw = 0f;
+    private float pitch = 0f;
+    [SerializeField] private float minPitch = -30f;
+    [SerializeField] private float maxPitch = 60f;
 
     private Transform mainCamera;
+    private Quaternion smoothRotation;
 
     void Start()
     {
         mainCamera = Camera.main.transform;
+
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
@@ -28,7 +32,7 @@ public class CameraFollow : MonoBehaviour
     void LateUpdate()
     {
         HandleInput();
-        UpdateCameraPosition();
+        UpdateCamera();
     }
 
     void HandleInput()
@@ -36,17 +40,23 @@ public class CameraFollow : MonoBehaviour
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
 
-        yaw += mouseX * rotationSpeed;
+        yaw += mouseX;
         pitch -= mouseY;
+
         pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
     }
 
-    void UpdateCameraPosition()
+    void UpdateCamera()
     {
-        Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
-        Vector3 targetPosition = cameraTarget.position + rotation * shoulderOffset;
+        // Rotación suave
+        Quaternion targetRotation = Quaternion.Euler(pitch, yaw, 0f);
+        smoothRotation = Quaternion.Slerp(smoothRotation, targetRotation, rotationSmoothSpeed * Time.deltaTime);
 
-        mainCamera.position = Vector3.Lerp(mainCamera.position, targetPosition, followSpeed * Time.deltaTime);
+        // Posición suave
+        Vector3 desiredPosition = cameraTarget.position + smoothRotation * shoulderOffset;
+        mainCamera.position = Vector3.Lerp(mainCamera.position, desiredPosition, followSpeed * Time.deltaTime);
+
+        // Mirar al objetivo
         mainCamera.LookAt(cameraTarget);
     }
 }
