@@ -360,6 +360,7 @@
 "Assets/Scrips/Health.cs"
 "Assets/Scrips/IntroManager.cs"
 "Assets/Scrips/LifePickup.cs"
+"Assets/Scrips/MusicManager.cs"
 "Assets/Scrips/PlayerCollectibleDetector.cs"
 "Assets/Scrips/PlayerHealth.cs"
 "Assets/Scrips/PlayerMovement.cs"
