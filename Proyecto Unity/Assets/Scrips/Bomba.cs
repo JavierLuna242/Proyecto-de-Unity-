@@ -11,6 +11,8 @@ public class Bomb : MonoBehaviour
     public float explodeDamage = 50f;
     public float explosionForce = 500f;
 
+    public GameObject explosionEffect;
+
     [Header("Hold Position Offset")]
     public Vector3 holdLocalPosition = new Vector3(0f, 0.40f, 0.25f);
     public Vector3 holdLocalRotation = new Vector3(0f, 0f, 0f);
@@ -85,6 +87,8 @@ public class Bomb : MonoBehaviour
 
     private void Explode()
     {
+        Instantiate(explosionEffect, transform.position, transform.rotation);
+
         Debug.Log("La bomba explotó.");
 
         Collider[] hits = Physics.OverlapSphere(transform.position, explodeRadius);
